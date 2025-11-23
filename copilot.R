@@ -2,9 +2,12 @@ library(tidyverse)
 library(vroom)
 library(lubridate)
 
+
+# 读取 CSV 文件，处理数据
 file_path <- "output.csv"
 df <- read.csv(file_path,sep = ",",fileEncoding = "UTF-8-BOM")
 
+# 数据清洗与转换
 transfered <- df |>
   filter(is.na(检查) | 检查 == "") |>
   mutate(
@@ -25,6 +28,7 @@ transfered <- df |>
   select(-c(检查,record_id,提交人,提交时间,自动编号)) |>
   relocate(填报日期, 姓名)
 
+# 按项目和用户汇总工时
 project_hour <- transfered |>
   mutate(
     Month = as.character(month(填报日期)),
@@ -34,10 +38,13 @@ project_hour <- transfered |>
   group_by(Month, 项目名称) |>
   summarise(总工时 = sum(项目工时, na.rm = TRUE), .groups = "drop")
 
+# 简单可视化项目工时分布
 project_hour |>
   ggplot(aes(x = 项目名称, y = 总工时)) +
   geom_point()
 
+
+# 按项目和用户汇总工时
 user_hour <- transfered |>
   mutate(
     Month = as.character(month(填报日期)),
@@ -46,7 +53,7 @@ user_hour <- transfered |>
   ) |>
   group_by(Month, 姓名) |>
   summarise(总工时 = sum(项目工时, na.rm = TRUE), .groups = "drop")
-
+# 简单可视化用户工时分布
 user_hour |>
   ggplot(aes(x = 姓名, y = 总工时)) +
   geom_point() +
