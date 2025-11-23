@@ -1,0 +1,10 @@
+{
+  "app_id": "cli_a839191a537ad00c",
+  "app_secret": "fV2isKWXfw5Zy7SHeOFJLbeLE6J8cmW0",
+  "bitable_app_token": "IjCmbbblcaoTMPsCiRicKVDxn7g",
+  "source_table": "tbldwlDXKoRro0Ah",
+  "target_table": "tblLYzvd6ghpKEAT",
+  "batch_size": 50,
+  "csv_output": true,
+  "csv_file_name": "output.csv"
+}
