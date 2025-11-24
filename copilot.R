@@ -5,7 +5,7 @@ library(lubridate)
 
 # 读取 CSV 文件，处理数据
 file_path <- "output.csv"
-df <- read.csv(file_path,sep = ",",fileEncoding = "UTF-8-BOM")
+df <- read.csv(file_path, sep = ",", fileEncoding = "UTF-8-BOM")
 
 # 数据清洗与转换
 transfered <- df |>
@@ -15,17 +15,29 @@ transfered <- df |>
     p2 = str_c(项目名称.2, as.character(项目工时.2), sep = ":"),
     p3 = str_c(项目名称.3, as.character(项目工时.3), sep = ":")
   ) |>
-  select(-c(项目名称.1, 项目工时.1, 项目名称.2, 项目工时.2, 项目名称.3, 项目工时.3)) |> 
-  pivot_longer(cols = c(p1, p2, p3), names_to = "del", values_to = "项目工时") |>
+  select(
+    -c(项目名称.1, 项目工时.1, 项目名称.2, 项目工时.2, 项目名称.3, 项目工时.3)
+  ) |>
+  pivot_longer(
+    cols = c(p1, p2, p3),
+    names_to = "del",
+    values_to = "项目工时"
+  ) |>
   select(-del) |>
-  separate(项目工时, into = c("项目名称", "项目工时"), sep = ":", fill = "right", extra = "merge") |>
+  separate(
+    项目工时,
+    into = c("项目名称", "项目工时"),
+    sep = ":",
+    fill = "right",
+    extra = "merge"
+  ) |>
   mutate(
     项目名称 = str_trim(项目名称),
     项目工时 = as.numeric(项目工时),
-    填报日期 = as_datetime(as.numeric(填报日期)/1000, tz = "UTC") |> as_date()
+    填报日期 = as_datetime(as.numeric(填报日期) / 1000, tz = "UTC") |> as_date()
   ) |>
   filter(!is.na(项目名称), 项目名称 != "") |>
-  select(-c(检查,record_id,提交人,提交时间,自动编号)) |>
+  select(-c(检查, record_id, 提交人, 提交时间, 自动编号)) |>
   relocate(填报日期, 姓名)
 
 # 按项目和用户汇总工时
@@ -62,7 +74,7 @@ user_hour |>
 invisible(list(project_hour = project_hour, user_hour = user_hour))
 
 # 基于已有 user_hour 对象构造可复用的 ggplot 分析图
-user_hour_viz <- (function(df){
+user_hour_viz <- (function(df) {
   library(ggplot2)
   library(dplyr)
   library(tidyr)
@@ -72,8 +84,8 @@ user_hour_viz <- (function(df){
   # 1. 准备数据
   df_prep <- df |>
     mutate(
-      Month = as.integer(as.character(Month)),        # 确保是整数（若原为字符）
-      Month = factor(Month, levels = sort(unique(Month))) 
+      Month = as.integer(as.character(Month)), # 确保是整数（若原为字符）
+      Month = factor(Month, levels = sort(unique(Month)))
     )
 
   # 按总工时对姓名排序（总计）
@@ -92,7 +104,7 @@ user_hour_viz <- (function(df){
   # 2. 图1：分面点图（每月各用户总工时分布）
   p1 <- ggplot(df_prep, aes(x = 姓名, y = 总工时)) +
     geom_point(alpha = 0.8, size = 2, colour = "#2c7fb8") +
-    facet_wrap(~ Month, scales = "free_x", nrow = 1) +
+    facet_wrap(~Month, scales = "free_x", nrow = 1) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
     labs(title = "每月各用户总工时（按月分面）", x = "姓名", y = "总工时")
@@ -103,7 +115,12 @@ user_hour_viz <- (function(df){
     scale_fill_brewer(palette = "Paired") +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    labs(title = "每月用户工时（按月份着色，DODGE）", x = "姓名", y = "总工时", fill = "Month")
+    labs(
+      title = "每月用户工时（按月份着色，DODGE）",
+      x = "姓名",
+      y = "总工时",
+      fill = "Month"
+    )
 
   # 4. 图3：热力图 用户 x 月份
   df_tile <- df_prep |>
@@ -113,30 +130,39 @@ user_hour_viz <- (function(df){
     geom_tile(colour = "grey90") +
     scale_fill_viridis_c(option = "magma", labels = comma) +
     theme_minimal() +
-    labs(title = "用户-月份工时热力图", x = "Month", y = "姓名", fill = "总工时") +
+    labs(
+      title = "用户-月份工时热力图",
+      x = "Month",
+      y = "姓名",
+      fill = "总工时"
+    ) +
     theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
 
   base_font_size <- 6
 
-my_theme <- theme_minimal(base_size = base_font_size) +
-  theme(
-    plot.title   = element_text(size = base_font_size + 4, face = "bold"),
-    axis.title   = element_text(size = base_font_size + 2),
-    axis.text    = element_text(size = base_font_size),
-    axis.text.x  = element_text(angle = 0, hjust = 1, size = base_font_size - 1),
-    legend.title = element_text(size = base_font_size),
-    legend.text  = element_text(size = base_font_size - 1),
-    strip.text   = element_text(size = base_font_size), # facet labels
-    plot.caption = element_text(size = base_font_size - 2)
-  )
+  my_theme <- theme_minimal(base_size = base_font_size) +
+    theme(
+      plot.title = element_text(size = base_font_size + 4, face = "bold"),
+      axis.title = element_text(size = base_font_size + 2),
+      axis.text = element_text(size = base_font_size),
+      axis.text.x = element_text(
+        angle = 0,
+        hjust = 1,
+        size = base_font_size - 1
+      ),
+      legend.title = element_text(size = base_font_size),
+      legend.text = element_text(size = base_font_size - 1),
+      strip.text = element_text(size = base_font_size), # facet labels
+      plot.caption = element_text(size = base_font_size - 2)
+    )
 
-# 将主题加到已创建的 p1 / p2 / p3
-p1 <- p1 + my_theme
-p2 <- p2 + my_theme
-p3 <- p3 + my_theme
-  
-theme_set(my_theme)
-  
+  # 将主题加到已创建的 p1 / p2 / p3
+  p1 <- p1 + my_theme
+  p2 <- p2 + my_theme
+  p3 <- p3 + my_theme
+
+  theme_set(my_theme)
+
   # 返回有用对象，便于后续保存或在交互式会话中显示
   list(
     plots = list(by_month_facet = p1, monthly_dodge = p2, heatmap = p3),
@@ -147,7 +173,7 @@ theme_set(my_theme)
 
 # ...existing code...
 # 基于 project_hour 构造可复用的 ggplot 分析图
-project_hour_viz <- (function(df){
+project_hour_viz <- (function(df) {
   library(ggplot2)
   library(dplyr)
   library(tidyr)
@@ -192,10 +218,18 @@ project_hour_viz <- (function(df){
     group_by(Month, 项目名称) |>
     summarise(总工时 = sum(总工时, na.rm = TRUE), .groups = "drop")
 
-  p2 <- ggplot(p2_data, aes(x = Month, y = 总工时, color = 项目名称, group = 项目名称)) +
+  p2 <- ggplot(
+    p2_data,
+    aes(x = Month, y = 总工时, color = 项目名称, group = 项目名称)
+  ) +
     geom_line(size = 1) +
     geom_point(size = 2) +
-    labs(title = paste0("前 ", length(top_projects), " 项目月度工时趋势"), x = "Month", y = "总工时", color = "项目") +
+    labs(
+      title = paste0("前 ", length(top_projects), " 项目月度工时趋势"),
+      x = "Month",
+      y = "总工时",
+      color = "项目"
+    ) +
     theme_minimal() +
     theme(legend.position = "right")
 
@@ -206,7 +240,12 @@ project_hour_viz <- (function(df){
   p3 <- ggplot(df_tile, aes(x = Month, y = 项目名称, fill = 总工时)) +
     geom_tile(colour = "grey90") +
     scale_fill_viridis_c(option = "magma", labels = comma) +
-    labs(title = "项目-月份工时热力图", x = "Month", y = "项目名称", fill = "总工时") +
+    labs(
+      title = "项目-月份工时热力图",
+      x = "Month",
+      y = "项目名称",
+      fill = "总工时"
+    ) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
 
