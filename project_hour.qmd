@@ -1,13 +1,38 @@
+---
+title: "R_项目工时统计分析笔记"
+format: 
+  html:
+    theme: cosmo
+    toc: true
+    toc - depth: 3
+    code-fold: true
+---
+
+# 1. 读取 CSV 文件，处理数据
+
+## 1.1 工时数据获取
+
+编写python程序与飞书api进行交互。获取工时统计收集表数据，并转换生成csv格式文件。
+
+
+## 1.2 利用R语言导入csv数据文件
+
+```{r}
+#| echo: false
+#| error: false
+#| warning: false
 library(tidyverse)
-library(vroom)
-library(lubridate)
-
-
-# 读取 CSV 文件，处理数据
+library(viridis)
+library(DT)
+library(showtext)
 file_path <- "output.csv"
 df <- read.csv(file_path, sep = ",", fileEncoding = "UTF-8-BOM")
 
-# 数据清洗与转换
+```
+
+# 2. 转换数据处理分析生成报告
+
+```{r}
 transfered <- df |>
   filter(is.na(检查) | 检查 == "") |>
   mutate(
@@ -39,8 +64,11 @@ transfered <- df |>
   filter(!is.na(项目名称), 项目名称 != "") |>
   select(-c(检查, record_id, 提交人, 提交时间, 自动编号)) |>
   relocate(填报日期, 姓名)
+```
+## 2.1 月度-项目工时分析
 
-# 按项目和用户汇总工时
+```{r}
+#| warning: false
 project_hour <- transfered |>
   mutate(
     Month = as.character(month(填报日期)),
@@ -49,14 +77,12 @@ project_hour <- transfered |>
   ) |>
   group_by(Month, 项目名称) |>
   summarise(总工时 = sum(项目工时, na.rm = TRUE), .groups = "drop")
+datatable(project_hour)
+```
 
-# 简单可视化项目工时分布
-project_hour |>
-  ggplot(aes(x = 项目名称, y = 总工时)) +
-  geom_point()
-
-
-# 按项目和用户汇总工时
+## 2.2 月度-员工工时分析
+```{r}
+#| warning: false
 user_hour <- transfered |>
   mutate(
     Month = as.character(month(填报日期)),
@@ -65,14 +91,20 @@ user_hour <- transfered |>
   ) |>
   group_by(Month, 姓名) |>
   summarise(总工时 = sum(项目工时, na.rm = TRUE), .groups = "drop")
-# 简单可视化用户工时分布
-user_hour |>
-  ggplot(aes(x = 姓名, y = 总工时)) +
-  geom_point() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+datatable(user_hour)
+```
+
+```{r}
 invisible(list(project_hour = project_hour, user_hour = user_hour))
+```
 
+# 3. 分析图表
+
+# 3.1 基于已有 user_hour 对象构造可复用的 ggplot 分析图
+
+```{r}
+#| warning: false
 # 基于已有 user_hour 对象构造可复用的 ggplot 分析图
 user_hour_viz <- (function(df) {
   library(ggplot2)
@@ -80,6 +112,8 @@ user_hour_viz <- (function(df) {
   library(tidyr)
   library(forcats)
   library(scales)
+  library(showtext)
+  showtext_auto()
 
   # 1. 准备数据
   df_prep <- df |>
@@ -171,8 +205,13 @@ user_hour_viz <- (function(df) {
   )
 })(user_hour)
 
-# ...existing code...
-# 基于 project_hour 构造可复用的 ggplot 分析图
+user_hour_viz$plots
+```
+
+## 3.2 基于 project_hour 构造可复用的 ggplot 分析图
+
+```{r}
+#| warning: false
 project_hour_viz <- (function(df) {
   library(ggplot2)
   library(dplyr)
@@ -180,7 +219,8 @@ project_hour_viz <- (function(df) {
   library(forcats)
   library(scales)
   library(viridis)
-
+  library(showtext)
+  showtext_auto()
   # 准备数据：确保 Month 为有序因子，按总工时排序项目
   df_prep <- df |>
     mutate(
@@ -271,4 +311,6 @@ project_hour_viz <- (function(df) {
     data = df_prep
   )
 })(project_hour)
-# ...existing code...
+
+project_hour_viz$plots
+```
