@@ -25,7 +25,8 @@ library(tidyverse)
 library(viridis)
 library(DT)
 library(showtext)
-file_path <- "output.csv"
+library(here)
+file_path <- here("output.csv")
 df <- read.csv(file_path, sep = ",", fileEncoding = "UTF-8-BOM")
 
 ```
