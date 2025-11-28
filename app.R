@@ -73,7 +73,7 @@ ui <- shiny::fluidPage(
           plotOutput("user_heatmap", height = "600px")
         )
       ),
-      width = 7
+      width = 9
     )
   )
 )

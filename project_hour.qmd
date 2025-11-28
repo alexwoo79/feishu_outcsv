@@ -66,6 +66,7 @@ transfered <- df |>
   select(-c(检查, record_id, 提交人, 提交时间, 自动编号)) |>
   relocate(填报日期, 姓名)
 ```
+
 ## 2.1 月度-项目工时分析
 
 ```{r}
@@ -99,11 +100,67 @@ datatable(user_hour)
 ```{r}
 invisible(list(project_hour = project_hour, user_hour = user_hour))
 ```
+## 3.3 项目地坪线图（Ridgeline / 地坪线图）
+```{r}
+#| warning: false
+#| echo: false
+# 如果缺少 ggridges 包则自动安装（非破坏性；安装可能需要用户许可/网络）
+if (!requireNamespace("ggridges", quietly = TRUE)) {
+  install.packages("ggridges")
+}
+library(ggridges)
+library(forcats)
+library(viridis)
+
+# 准备数据：确保 Month 为整数并按总工时选取前 N 个项目以便可视化
+df_ridge <- project_hour |>
+  mutate(Month = as.integer(as.character(Month))) |>
+  group_by(项目名称) |>
+  summarize(total = sum(总工时, na.rm = TRUE), .groups = "drop") |>
+  arrange(desc(total))
+
+top_n <- 20 # 如需更多/更少，可调整
+top_projects <- df_ridge$项目名称[seq_len(min(top_n, nrow(df_ridge)))]
+
+df_ridge_plot <- project_hour |>
+  mutate(Month = as.integer(as.character(Month))) |>
+  filter(项目名称 %in% top_projects) |>
+  # 按 precomputed 总工时顺序设置项目因子顺序，避免 fct_reorder 中的 idx 长度错误
+  mutate(项目名称 = factor(项目名称, levels = top_projects))
+
+# 使用 ggridges 的 geom_ridgeline 绘制每个项目随月份的工时“地坪”线
+p_ridge <- ggplot(
+  df_ridge_plot,
+  aes(
+    x = Month,
+    y = 项目名称,
+    height = 总工时,
+    group = 项目名称,
+    fill = 项目名称
+  )
+) +
+  geom_ridgeline(alpha = 0.85, scale = 0.4, colour = "grey30") +
+  scale_fill_viridis_d(option = "C", guide = FALSE) +
+  scale_x_continuous(breaks = sort(unique(df_ridge_plot$Month))) +
+  labs(
+    title = "项目按月工时地坪线图",
+    x = "Month",
+    y = "项目名称"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+    axis.text.y = element_text(size = 8),
+    plot.title = element_text(face = "bold", size = 12)
+  )
+
+p_ridge
+
+invisible(p_ridge)
+```
 
 # 3. 分析图表
 
 # 3.1 基于已有 user_hour 对象构造可复用的 ggplot 分析图
-
 ```{r}
 #| warning: false
 # 基于已有 user_hour 对象构造可复用的 ggplot 分析图
