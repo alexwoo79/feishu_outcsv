@@ -35,7 +35,7 @@ df <- read.csv(file_path, sep = ",", fileEncoding = "UTF-8-BOM")
 
 ```{r}
 transfered <- df |>
-  filter(is.na(检查) | 检查 == "") |>
+  filter(is.na(检查) | 检查 == "{}") |>
   mutate(
     p1 = str_c(项目名称.1, as.character(项目工时.1), sep = ":"),
     p2 = str_c(项目名称.2, as.character(项目工时.2), sep = ":"),
@@ -62,7 +62,7 @@ transfered <- df |>
     项目工时 = as.numeric(项目工时),
     填报日期 = as_datetime(as.numeric(填报日期) / 1000, tz = "UTC") |> as_date()
   ) |>
-  filter(!is.na(项目名称), 项目名称 != "") |>
+  filter(!is.na(项目名称), 项目名称 != "{}") |>
   select(-c(检查, record_id, 提交人, 提交时间, 自动编号)) |>
   relocate(填报日期, 姓名)
 ```
