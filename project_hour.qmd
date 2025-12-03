@@ -97,6 +97,18 @@ user_hour <- transfered |>
 datatable(user_hour)
 ```
 
+
+```{r}
+user_hour <- transfered |>
+  mutate(
+    Month = as.character(month(填报日期)),
+    Quarter = as.character(quarter(填报日期)),
+    Year = as.character(year(填报日期))
+  ) |>
+  group_by(Month, 姓名) |>
+  summarise(总工时 = sum(项目工时, na.rm = TRUE), .groups = "drop")
+```
+
 ```{r}
 invisible(list(project_hour = project_hour, user_hour = user_hour))
 ```
@@ -205,8 +217,61 @@ user_hour_viz <- (function(df) {
     data = df_prep
   )
 })(user_hour)
-
 user_hour_viz$plots
+```
+
+
+# 员工的Cleveland dot plot
+```{r}
+#| warning: false
+# Cleveland dot plot（Cleveland dot plot）：每月各用户总工时
+user_hour_cleveland <- (function(df) {
+  library(ggplot2)
+  library(dplyr)
+  library(forcats)
+  library(showtext)
+  showtext_auto()
+
+  df_prep <- df |>
+    mutate(
+      Month = as.integer(as.character(Month)),
+      Month = factor(Month, levels = sort(unique(Month)))
+    )
+
+  # 按整体总工时对姓名排序（用于在每个分面中保持一致顺序）
+  name_order <- df_prep |>
+    group_by(姓名) |>
+    summarise(total = sum(总工时, na.rm = TRUE), .groups = "drop") |>
+    arrange(total) |>
+    pull(姓名)
+
+  df_prep <- df_prep |>
+    mutate(姓名 = factor(姓名, levels = name_order))
+
+  p <- ggplot(df_prep, aes(x = 总工时, y = 姓名)) +
+    geom_segment(aes(yend = 姓名), xend = 0, colour = "gray50") +
+    geom_point(size = 2.2, colour = "#2c7fb8") +
+    facet_wrap(~Month, ncol = 3, scales = "free_y") +
+    labs(
+      title = "Cleveland dot plot：每月各用户总工时",
+      x = "总工时",
+      y = "姓名"
+    ) +
+    theme_bw() +
+    theme(
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.major.y = element_blank(),
+      axis.text.y = element_text(size = 6),
+      axis.title = element_text(size = 9),
+      strip.text = element_text(size = 8),
+      plot.title = element_text(size = 11, face = "bold")
+    )
+
+  p
+})(user_hour)
+
+user_hour_cleveland
 ```
 
 ## 3.2 基于 project_hour 构造可复用的 ggplot 分析图
